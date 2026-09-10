@@ -1,0 +1,27 @@
+.\" Copyright (C) The c-ares project and its contributors
+.\" SPDX-License-Identifier: MIT
+.TH ARES_SET_SOCKET_CLOSE_CALLBACK 3 "10 September 2026"
+.SH NAME
+ares_set_socket_close_callback \- replace socket closing
+.SH SYNOPSIS
+.nf
+#include <ares.h>
+
+void ares_set_socket_close_callback(ares_channel_t *channel,
+                                   ares_sock_close_callback callback,
+                                   void *user_data);
+.fi
+.SH DESCRIPTION
+Installs a callback that takes ownership of each socket when c-ares is finished
+using it. The callback must close the socket, but may defer that close until
+an external event loop has acknowledged deregistration. c-ares does not use
+or close the socket after invoking the callback.
+.PP
+A NULL callback restores closing through the channel's socket functions.
+The setting is copied by ares_dup. The callback must not retain the channel:
+it may run during ares_destroy. The application owns the lifetime of user_data.
+.PP
+The setting cannot be used with ARES_OPT_EVENT_THREAD and is ignored for those
+channels. Configure it before starting queries.
+.SH SEE ALSO
+ares_set_socket_functions_ex(3), ares_destroy(3)
