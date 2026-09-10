@@ -273,6 +273,33 @@ TEST_P(MockEventThreadTest, SockCallback) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
+TEST_P(MockEventThreadTest, SocketCloseOverrideIgnored)
+{
+  DNSPacket rsp;
+  rsp.set_response()
+    .set_aa()
+    .add_question(new DNSQuestion("close.test", T_A))
+    .add_answer(new DNSARR("close.test", 100, { 2, 3, 4, 5 }));
+  EXPECT_CALL(server_, OnRequest("close.test", T_A))
+    .WillOnce(SetReply(&server_, &rsp));
+
+  bool closed = false;
+  ares_set_socket_close_callback(
+    channel_,
+    [](ares_socket_t fd, void *data) {
+      *static_cast<bool *>(data) = true;
+      sclose(fd);
+    },
+    &closed);
+  HostResult result;
+  ares_gethostbyname(channel_, "close.test.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  ares_destroy(channel_);
+  channel_ = nullptr;
+  EXPECT_FALSE(closed);
+}
+
 TEST_P(MockEventThreadTest, SockFailCallback) {
   // Notification of new sockets gives an error.
   int rc = -1;

@@ -501,6 +501,8 @@ int ares_dup(ares_channel_t **dest, const ares_channel_t *src)
    * user-provided */
   (*dest)->sock_create_cb      = src->sock_create_cb;
   (*dest)->sock_create_cb_data = src->sock_create_cb_data;
+  (*dest)->sock_close_cb       = src->sock_close_cb;
+  (*dest)->sock_close_cb_data  = src->sock_close_cb_data;
   (*dest)->sock_config_cb      = src->sock_config_cb;
   (*dest)->sock_config_cb_data = src->sock_config_cb_data;
   memcpy(&(*dest)->sock_funcs, &(src->sock_funcs), sizeof((*dest)->sock_funcs));

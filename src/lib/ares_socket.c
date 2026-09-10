@@ -392,7 +392,27 @@ void ares_socket_close(ares_channel_t *channel, ares_socket_t s)
     return;
   }
 
-  channel->sock_funcs.aclose(s, channel->sock_func_cb_data);
+  if (channel->sock_close_cb != NULL) {
+    channel->sock_close_cb(s, channel->sock_close_cb_data);
+  } else {
+    channel->sock_funcs.aclose(s, channel->sock_func_cb_data);
+  }
+}
+
+void ares_set_socket_close_callback(ares_channel_t          *channel,
+                                    ares_sock_close_callback callback,
+                                    void                    *user_data)
+{
+  if (channel == NULL) {
+    return;
+  }
+
+  ares_channel_lock(channel);
+  if (!(channel->optmask & ARES_OPT_EVENT_THREAD)) {
+    channel->sock_close_cb      = callback;
+    channel->sock_close_cb_data = user_data;
+  }
+  ares_channel_unlock(channel);
 }
 
 void ares_set_socket_callback(ares_channel_t           *channel,

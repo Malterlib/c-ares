@@ -140,6 +140,7 @@ MANPAGES = ares_cancel.3		\
   ares_set_servers_ports.3		\
   ares_set_servers_ports_csv.3		\
   ares_set_socket_callback.3		\
+  ares_set_socket_close_callback.3	\
   ares_set_socket_configure_callback.3	\
   ares_set_socket_functions.3		\
   ares_set_socket_functions_ex.3	\

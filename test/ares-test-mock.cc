@@ -275,6 +275,47 @@ TEST_P(MockChannelTest, SockCallback) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
+static void SocketCloseCallback(ares_socket_t fd, void *data)
+{
+  auto *closed = static_cast<std::vector<ares_socket_t> *>(data);
+  closed->push_back(fd);
+}
+
+TEST_P(MockChannelTest, DeferredSocketClose)
+{
+  DNSPacket rsp;
+  rsp.set_response()
+    .set_aa()
+    .add_question(new DNSQuestion("deferred.test", T_A))
+    .add_answer(new DNSARR("deferred.test", 100, { 2, 3, 4, 5 }));
+  EXPECT_CALL(server_, OnRequest("deferred.test", T_A))
+    .WillOnce(SetReply(&server_, &rsp));
+
+  std::vector<ares_socket_t> closed;
+  ares_set_socket_close_callback(nullptr, SocketCloseCallback, &closed);
+  ares_set_socket_close_callback(channel_, SocketCloseCallback, &closed);
+  ares_channel_t *duplicate = nullptr;
+  ASSERT_EQ(ARES_SUCCESS, ares_dup(&duplicate, channel_));
+  ares_destroy(channel_);
+  channel_ = duplicate;
+  HostResult result;
+  ares_gethostbyname(channel_, "deferred.test.", AF_INET, HostCallback,
+                     &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  ares_destroy(channel_);
+  channel_ = nullptr;
+
+  ASSERT_FALSE(closed.empty());
+  for (auto fd : closed) {
+    struct sockaddr_storage addr;
+    ares_socklen_t          len = sizeof(addr);
+    EXPECT_EQ(
+      0, getsockname(fd, reinterpret_cast<struct sockaddr *>(&addr), &len));
+    EXPECT_EQ(0, sclose(fd));
+  }
+}
+
 TEST_P(MockChannelTest, SockFailCallback) {
   // Notification of new sockets gives an error.
   int rc = -1;

@@ -533,6 +533,19 @@ CARES_EXTERN void ares_set_socket_callback(ares_channel_t           *channel,
                                            ares_sock_create_callback callback,
                                            void                     *user_data);
 
+/*! Take ownership of a socket when c-ares has finished using it.
+ *  \param[in] sock Socket to close, possibly after external deregistration.
+ *  \param[in] user_data Context supplied to ares_set_socket_close_callback().
+ */
+typedef void (*ares_sock_close_callback)(ares_socket_t sock, void *user_data);
+
+/*! Override socket closing without replacing the native socket implementation.
+ *  \param[in] channel Initialized channel without an event thread.
+ *  \param[in] callback Callback owning the close, or NULL for native closing.
+ *  \param[in] user_data Context passed to callback. */
+CARES_EXTERN void ares_set_socket_close_callback(
+  ares_channel_t *channel, ares_sock_close_callback callback, void *user_data);
+
 CARES_EXTERN void ares_set_socket_configure_callback(
   ares_channel_t *channel, ares_sock_config_callback callback, void *user_data);
 
